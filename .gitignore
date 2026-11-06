@@ -12,3 +12,6 @@ board_test/sketch_oct18a/
 
 __pycache__/
 .DS_Store
+
+# Local editor/agent settings
+.claude/

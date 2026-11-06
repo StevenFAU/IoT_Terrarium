@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f7d4f" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1411" media="(prefers-color-scheme: dark)">
+<meta name="description" content="Live readings, history and photos from the IoT Terrarium">
+<title>Terrarium</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <nav class="nav" aria-label="Sections">
+    <div class="brand">
+      <img src="icon.svg" alt="" width="32" height="32">
+      <span>Terrarium</span>
+    </div>
+    <button class="nav-btn" data-view="overview" aria-current="page">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg>
+      <span>Overview</span>
+    </button>
+    <button class="nav-btn" data-view="history">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18"/><path d="M4 16l4.5-5 4 3.5L20 6"/></svg>
+      <span>History</span>
+    </button>
+    <button class="nav-btn" data-view="camera">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.6-2.4h6.8L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.4"/></svg>
+      <span>Camera</span>
+    </button>
+    <button class="nav-btn" data-view="settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="16" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+      <span>Settings</span>
+    </button>
+    <p class="nav-foot" id="navFoot"></p>
+  </nav>
+
+  <main id="main">
+    <header class="topbar">
+      <div>
+        <h1 id="title">Terrarium</h1>
+        <p class="subtitle" id="subtitle">Connecting…</p>
+      </div>
+      <span class="pill" id="linkPill"><span class="dot"></span><span id="linkText">Connecting</span></span>
+    </header>
+
+    <div class="banner info" id="demoBanner" hidden>
+      <strong>Demo mode.</strong> These are simulated readings. On the terrarium's own WiFi
+      (<em>Terrarium</em>, then open 192.168.4.1) this page shows the real data.
+    </div>
+    <div class="banner bad" id="offlineBanner" hidden>
+      <strong>Can't reach the board.</strong> Check your phone or laptop is still on the
+      <em>Terrarium</em> WiFi network. Retrying…
+    </div>
+    <div id="alerts" class="alerts" aria-live="polite"></div>
+
+    <!-- Overview -->
+    <section class="view" id="view-overview" aria-labelledby="title">
+      <div class="metrics" id="metrics"></div>
+      <div class="overview-row">
+        <article class="card camera-card">
+          <div class="card-head">
+            <h2>Latest photo</h2>
+            <button class="link-btn" data-goto="camera">All photos</button>
+          </div>
+          <button class="photo-frame" id="latestPhotoBtn" aria-label="Open latest photo">
+            <img id="latestPhoto" alt="Latest photo of the terrarium" hidden>
+            <span class="photo-empty" id="latestPhotoEmpty">No photos yet</span>
+          </button>
+          <p class="muted small" id="latestPhotoCaption"></p>
+          <div class="snap" data-snap>
+            <button class="btn primary" data-snap-btn>Take photo now</button>
+            <div class="progress" data-snap-progress hidden><div class="bar"></div></div>
+            <p class="muted small" data-snap-text></p>
+          </div>
+        </article>
+        <article class="card link-card">
+          <div class="card-head"><h2>Radio link</h2></div>
+          <div class="signal">
+            <div class="bars" id="signalBars" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <div>
+              <div class="signal-label" id="signalLabel">–</div>
+              <div class="muted small" id="signalDetail">LoRa 915 MHz</div>
+            </div>
+          </div>
+          <dl class="stats" id="linkStats"></dl>
+        </article>
+      </div>
+    </section>
+
+    <!-- History -->
+    <section class="view" id="view-history" hidden>
+      <div class="toolbar">
+        <div class="segmented" role="group" aria-label="Time range" id="rangePicker">
+          <button data-range="1">1 h</button>
+          <button data-range="6" aria-pressed="true">6 h</button>
+          <button data-range="24">24 h</button>
+        </div>
+        <div class="chips" id="metricChips" role="group" aria-label="Show sensors"></div>
+        <button class="btn" id="exportCsv">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg>
+          Export CSV
+        </button>
+      </div>
+      <p class="muted small" id="historyNote"></p>
+      <div class="charts" id="charts"></div>
+    </section>
+
+    <!-- Camera -->
+    <section class="view" id="view-camera" hidden>
+      <div class="camera-layout">
+        <article class="card">
+          <button class="photo-frame large" id="cameraPhotoBtn" aria-label="Open photo">
+            <img id="cameraPhoto" alt="Latest photo of the terrarium" hidden>
+            <span class="photo-empty" id="cameraPhotoEmpty">No photos yet</span>
+          </button>
+          <p class="muted small" id="cameraCaption"></p>
+          <div class="snap" data-snap>
+            <button class="btn primary" data-snap-btn>Take photo now</button>
+            <div class="progress" data-snap-progress hidden><div class="bar"></div></div>
+            <p class="muted small" data-snap-text></p>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-head"><h2>Saved photos</h2><span class="muted small" id="photoCount"></span></div>
+          <div class="gallery" id="gallery"></div>
+          <p class="muted small note">
+            Photos travel over LoRa (about 30 s each), so they're small (160×120). For live video and full-size
+            photos, stand near the terrarium, join the <strong>Terrarium-Cam</strong> WiFi and open 192.168.4.1.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section class="view" id="view-settings" hidden>
+      <form class="card settings" id="settingsForm" novalidate>
+        <div class="card-head"><h2>Dashboard settings</h2></div>
+        <p class="muted small">Saved on the board, so everyone who opens the dashboard sees the same settings.</p>
+        <label class="field">
+          <span>Terrarium name</span>
+          <input name="name" maxlength="40" autocomplete="off">
+        </label>
+        <div class="field">
+          <span>Temperature unit</span>
+          <div class="segmented" role="group" aria-label="Temperature unit" id="unitPicker">
+            <button type="button" data-unit="C">°C</button>
+            <button type="button" data-unit="F">°F</button>
+          </div>
+        </div>
+        <fieldset>
+          <legend>Target ranges</legend>
+          <p class="muted small">Readings outside these show an alert. Leave a box empty for no limit.</p>
+          <div class="ranges" id="rangeFields"></div>
+        </fieldset>
+        <label class="field">
+          <span>Hydrogen alert at</span>
+          <span class="input-unit"><input name="h2Alert" type="number" min="100" max="10000" step="10" inputmode="numeric"><em>ppm</em></span>
+        </label>
+        <p class="form-error" id="settingsError" role="alert"></p>
+        <div class="form-actions">
+          <button class="btn primary" type="submit">Save settings</button>
+          <button class="btn" type="button" id="resetSettings">Restore defaults</button>
+        </div>
+      </form>
+      <article class="card">
+        <div class="card-head"><h2>Board</h2></div>
+        <dl class="stats" id="boardStats"></dl>
+        <div class="storage">
+          <div class="muted small" id="storageText"></div>
+          <div class="progress"><div class="bar" id="storageBar"></div></div>
+        </div>
+      </article>
+      <article class="card help">
+        <div class="card-head"><h2>Connecting</h2></div>
+        <ol>
+          <li>Join the <strong>Terrarium</strong> WiFi network (password in the project summary).</li>
+          <li>If the phone warns "No internet", choose <strong>Stay connected</strong>.</li>
+          <li>Open <strong>192.168.4.1</strong> in the browser. Add it to your home screen for one-tap access.</li>
+        </ol>
+        <p class="muted small">History is kept in the board's memory, so it starts over if the board restarts.
+          The last 40 photos and these settings survive restarts.</p>
+      </article>
+    </section>
+  </main>
+</div>
+
+<dialog class="lightbox" id="lightbox" aria-label="Photo viewer">
+  <div class="lightbox-top">
+    <span id="lightboxCaption"></span>
+    <button class="icon-btn" id="lightboxClose" aria-label="Close">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <img id="lightboxImg" alt="">
+  <div class="lightbox-bottom">
+    <button class="icon-btn" id="lightboxPrev" aria-label="Older photo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <a class="btn" id="lightboxDownload" download>Download</a>
+    <button class="icon-btn" id="lightboxNext" aria-label="Newer photo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
