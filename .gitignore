@@ -1,0 +1,14 @@
+# WiFi names/passwords for the boards' own networks. Copy wifi_secrets.example.h to wifi_secrets.h.
+wifi_secrets.h
+
+# Photos saved by save_images.py
+images/
+
+# Generated summary PDF (contains the WiFi passwords)
+*.pdf
+
+# Arduino IDE "save as" copy of board_test
+board_test/sketch_oct18a/
+
+__pycache__/
+.DS_Store
